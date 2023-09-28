@@ -100,7 +100,7 @@ def get_perplexity_headers(driver: webdriver.Chrome) -> dict[str, str]:
         "referer": "https://www.perplexity.ai/",
         "sec-ch-ua": browser_headers["sec-ch-ua"],
         "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"macOS"',
+        "sec-ch-ua-platform": browser_headers["sec-ch-ua-platform"],
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-origin",
@@ -147,17 +147,18 @@ async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], di
     settings = get_settings()
     loop = asyncio.get_event_loop()
     user_agent = browser.execute_script("return navigator.userAgent;")
-    # browser.get(settings.PERPLEXITY_URL)
-    await loop.run_in_executor(None, browser.get, settings.PERPLEXITY_URL)
+    browser.get(settings.PERPLEXITY_URL)
+    # await loop.run_in_executor(None, browser.get, settings.PERPLEXITY_URL)
     page_source_b64 = base64.b64encode(browser.page_source.encode("utf-8")).decode("utf-8")
     async with httpx.AsyncClient() as web_session:
-        if await check_capmonster_balance(web_session) < 0.001:
+        if await check_capmonster_balance(web_session) < 0.002:
             raise CaptchaError("Not enough money on capmonster balance")
         task_id = await request_cloudfare_challenge(web_session, user_agent, page_source_b64)
         cf_clearance = await get_cloudfare_challenge_result(web_session, task_id)
     browser.add_cookie({"name": "cf_clearance", "value": cf_clearance})
-    # browser.get(settings.PERPLEXITY_URL)
-    await loop.run_in_executor(None, browser.get, settings.PERPLEXITY_URL)
+    browser.get(settings.PERPLEXITY_URL)
+    print(f"{browser.title=}")
+    # await loop.run_in_executor(None, browser.get, settings.PERPLEXITY_URL)
     browser.find_element(By.XPATH, "//div[normalize-space()='Sign Up']").click()
     await asyncio.sleep(1)
     browser.find_element(By.XPATH, "//input[@type='email']").send_keys("aa@aa.aa")
