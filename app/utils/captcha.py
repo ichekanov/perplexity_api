@@ -158,6 +158,12 @@ async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], di
     browser.add_cookie({"name": "cf_clearance", "value": cf_clearance})
     # browser.get(settings.PERPLEXITY_URL)
     await loop.run_in_executor(None, browser.get, settings.PERPLEXITY_URL)
+    browser.find_element(By.XPATH, "//div[normalize-space()='Sign Up']").click()
+    await asyncio.sleep(1)
+    browser.find_element(By.XPATH, "//input[@type='email']").send_keys("aa@aa.aa")
+    await asyncio.sleep(1)
+    browser.find_element(By.XPATH, "//div[contains(text(), 'Continue with Email')]").click()
+    await asyncio.sleep(1)
     cookies = get_perplexity_cookies(browser)
     headers = get_perplexity_headers(browser)
     return headers, cookies
