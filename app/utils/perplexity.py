@@ -84,6 +84,7 @@ class Perplexity(AsyncMixin):
         self.last_update: datetime = datetime.now()
 
     async def _create_client(self) -> PerplexityClient:
+        display = Display(visible=False, size=(1920, 1080))
         self._logger.info("[PERPLEXITY] Fetching credentials for new client...")
         # with Browser(self.chrome_options, force_timeout=5) as browser:
         perplexity_headers, perplexity_cookies = await auth_perplexity(None)
@@ -92,6 +93,7 @@ class Perplexity(AsyncMixin):
         emailnator_headers, emailnator_cookies = await auth_emailnator(None)
         self._logger.info("[PERPLEXITY] Emailnator headers: %s", emailnator_headers)
         self._logger.info("[PERPLEXITY] Emailnator cookies: %s", emailnator_cookies)
+        display.stop()
         self._logger.info("[PERPLEXITY] Credentials fetched. Authenticating...")
         client = await PerplexityClient(perplexity_headers, perplexity_cookies)
         self._logger.info("[PERPLEXITY] Authenticated. Creating account...")
