@@ -23,7 +23,7 @@ class Browser:
             self.display = None
         self.chrome_options = chrome_options
         self.seleniumwire_options = None
-        if settings.PROXY_HOST:
+        if settings.PROXY_HOST and settings.ENV == "local":
             address = f"{settings.PROXY_HOST}:{settings.PROXY_PORT}"
             if settings.PROXY_LOGIN and settings.PROXY_PASSWORD:
                 address = f"{settings.PROXY_LOGIN}:{settings.PROXY_PASSWORD}@{address}"
