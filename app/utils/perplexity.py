@@ -86,12 +86,12 @@ class Perplexity(AsyncMixin):
         self._logger.info("[PERPLEXITY] Fetching credentials for new client...")
         with Browser(self.chrome_options, force_timeout=5) as browser:
             perplexity_headers, perplexity_cookies = await auth_perplexity(browser)
-            self._logger.debug("[PERPLEXITY] Perplexity headers: %s", perplexity_headers)
-            self._logger.debug("[PERPLEXITY] Perplexity cookies: %s", perplexity_cookies)
+            self._logger.info("[PERPLEXITY] Perplexity headers: %s", perplexity_headers)
+            self._logger.info("[PERPLEXITY] Perplexity cookies: %s", perplexity_cookies)
             emailnator_headers, emailnator_cookies = await auth_emailnator(browser)
 
-            self._logger.debug("[PERPLEXITY] Emailnator headers: %s", emailnator_headers)
-            self._logger.debug("[PERPLEXITY] Emailnator cookies: %s", emailnator_cookies)
+            self._logger.info("[PERPLEXITY] Emailnator headers: %s", emailnator_headers)
+            self._logger.info("[PERPLEXITY] Emailnator cookies: %s", emailnator_cookies)
         self._logger.info("[PERPLEXITY] Credentials fetched. Authenticating...")
         client = await PerplexityClient(perplexity_headers, perplexity_cookies)
         self._logger.info("[PERPLEXITY] Authenticated. Creating account...")

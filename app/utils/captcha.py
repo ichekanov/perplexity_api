@@ -74,6 +74,17 @@ def get_cookies_dict(driver: webdriver.Chrome) -> dict[str, str]:
     return cookies
 
 
+def get_perplexity_cookies(driver: webdriver.Chrome) -> dict[str, str]:
+    cookies = {}
+    for request in driver.requests:
+        if "api/auth/signin/email" in request.url:
+            for cookie in request.headers.get("cookie").split(";"):
+                name, value = cookie.split("=", 1)
+                cookies[name.strip()] = value.strip()
+            return cookies
+    raise FileNotFoundError("Perplexity cookies not found")
+
+
 def get_perplexity_headers(driver: webdriver.Chrome) -> dict[str, str]:
     browser_headers = {}
     for request in driver.requests:
@@ -82,7 +93,7 @@ def get_perplexity_headers(driver: webdriver.Chrome) -> dict[str, str]:
         "authority": "www.perplexity.ai",
         "accept": "*/*",
         "accept-language": "ru",
-        # "baggage": browser_headers["baggage"],
+        "baggage": browser_headers["baggage"],
         "content-type": "application/x-www-form-urlencoded",
         "dnt": "1",
         "origin": "https://www.perplexity.ai",
@@ -93,7 +104,7 @@ def get_perplexity_headers(driver: webdriver.Chrome) -> dict[str, str]:
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-origin",
-        # "sentry-trace": browser_headers["sentry-trace"],
+        "sentry-trace": browser_headers["sentry-trace"],
         "user-agent": browser_headers["user-agent"],
     }
     return perplexity_headers
@@ -147,7 +158,7 @@ async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], di
     browser.add_cookie({"name": "cf_clearance", "value": cf_clearance})
     # browser.get(settings.PERPLEXITY_URL)
     await loop.run_in_executor(None, browser.get, settings.PERPLEXITY_URL)
-    cookies = get_cookies_dict(browser)
+    cookies = get_perplexity_cookies(browser)
     headers = get_perplexity_headers(browser)
     return headers, cookies
 
