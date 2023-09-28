@@ -77,7 +77,6 @@ def get_cookies_dict(driver: webdriver.Chrome) -> dict[str, str]:
 def get_perplexity_cookies(driver: webdriver.Chrome) -> dict[str, str]:
     cookies = {}
     for request in driver.requests:
-        print(request.url)
         if "api/auth/signin/email" in request.url:
             for cookie in request.headers.get("cookie").split(";"):
                 name, value = cookie.split("=", 1)
