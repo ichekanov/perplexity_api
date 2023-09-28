@@ -1,0 +1,58 @@
+version: '3.9'
+name: summary-api
+
+services:
+  app:
+    restart: always
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.app
+    env_file:
+      - ./.env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app-router.rule=Host(`llama-index.online`)"
+      - "traefik.http.services.app-service.loadbalancer.server.port=8000"
+      - "traefik.http.routers.app-router.tls=true"
+      - "traefik.http.routers.app-router.tls.certresolver=letsencrypt"
+    ports:
+      - 8000:8000
+    networks:
+      - custom
+    depends_on:
+      - postgres
+      - traefik
+    entrypoint: ["/bin/bash", "./entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:8000/api/v2/health_check/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+
+  postgres:
+    image: postgres:15.4
+    env_file:
+      - ./.env
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data/
+    networks:
+      - custom
+
+  traefik:
+    image: traefik:latest
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik/traefik.toml:/etc/traefik/traefik.toml"
+      - "./traefik/acme/:/etc/traefik/acme/"
+    networks:
+      - custom
+
+volumes:
+  postgres_data:
+
+networks:
+  custom:

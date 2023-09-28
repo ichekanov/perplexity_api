@@ -1,0 +1,134 @@
+[tool.poetry]
+name = "perplexity_api"
+version = "1.0.0"
+description = "Unofficial API for Perplexity AI service"
+authors = ["Ivan Chekanov <is.2003.01@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "app"}]
+
+# DEPENDENCIES
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.101.0"
+uvicorn = "^0.23.2"
+regex = "^2023.6.3"
+pydantic = {extras = ["settings"], version = "^2.1.1"}
+pydantic-settings = "^2.0.2"
+httpx = "^0.24.1"
+aiohttp = "^3.8.5"
+pyvirtualdisplay = "^3.0"
+selenium-wire = "^5.1.0"
+websocket-client = "^1.6.3"
+websockets = "^11.0.3"
+beautifulsoup4 = "^4.12.2"
+setuptools = "^68.2.2"
+lxml = "^4.9.3"
+
+
+[tool.poetry.group.dev.dependencies]
+pylint = "^2.17.5"
+black = "^23.7.0"
+isort = "^5.12.0"
+pytest = "^7.4.0"
+configargparse = "^1.7"
+sqlalchemy-utils = "^0.41.1"
+mock = "^5.1.0"
+pytest-asyncio = "^0.21.1"
+pytest-cov = "^4.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# PYTEST
+
+[tool.pytest]
+addopts = "--cov=app --cov-report html:coverage-report-html --cov-fail-under=60"
+python_files = "test_*.py"
+python_classes = ["*Test", "Test*"]
+python_functions = "test_*"
+testpaths = "tests/"
+
+[tool.coverage.report]
+exclude_lines = [
+    "# pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "def __unicode__",
+]
+show_missing = true
+skip_empty = true
+omit = [
+  "*/__init__.py",
+  "app/db/migrator/env.py",
+]
+
+[tool.coverage.html]
+directory = "pytest-cov-report"
+
+[tool.coverage.run]
+branch = true
+concurrency = ['thread', 'greenlet']
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+# LINTERS
+
+[tool.pylint.master]
+extension-pkg-allow-list = ["pydantic"]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.basic]
+good-names = ["db"]
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+  "C0114",  # missing-module-docstring
+  "C0116",  # missing-function-docstring
+  "R0903",  # too-few-public-methods (for sqlalchemy tables and pydantic classes)
+  "C0115",  # missing-class-docstring (for api routes)
+  "C0103",  # invalid-name (for pydatic settings)
+  "E1102",  # not-callable (for sqlalchemy tables)
+]
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+ignore_missing_imports = false
+no_implicit_optional = true
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+)
+'''
+
+[tool.isort]
+known_local_folder = "app"
+lines_after_imports = 2
+multi_line_output = 3
+line_length = 120
+include_trailing_comma = true
+
