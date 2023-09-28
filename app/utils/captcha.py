@@ -168,6 +168,10 @@ async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], di
         },
     }
     options = webdriver.ChromeOptions()
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--start-maximized")
     # options.add_argument("user-data-dir=/Users/ichek/Documents/GitHub/GPT_docs/scripts/selenium")
     driver = webdriver.Chrome(seleniumwire_options=seleniumwire_options, options=options)
     driver.get("https://www.perplexity.ai")

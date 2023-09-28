@@ -75,10 +75,10 @@ class Perplexity(AsyncMixin):
         self._logger = getLogger("uvicorn.debug")
         self.status: PerplexityStatus = PerplexityStatus.INIT
         self.chrome_options = Options()
-        # self.chrome_options.add_argument("--no-sandbox")
-        # self.chrome_options.add_argument("--disable-gpu")
-        # self.chrome_options.add_argument("--disable-dev-shm-usage")
-        # self.chrome_options.add_argument("--start-maximized")
+        self.chrome_options.add_argument("--no-sandbox")
+        self.chrome_options.add_argument("--disable-gpu")
+        self.chrome_options.add_argument("--disable-dev-shm-usage")
+        self.chrome_options.add_argument("--start-maximized")
         self.client: PerplexityClient = await self._create_client()
         self.status = PerplexityStatus.READY
         self.last_update: datetime = datetime.now()
