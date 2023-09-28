@@ -185,7 +185,6 @@ async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], di
     while "solution" not in result:
         result = httpx.post("https://api.capmonster.cloud/getTaskResult", json={"clientKey": "39a45af0d72b51faeb0b2cb424c41f7b", "taskId": resp["taskId"]}).json()
         if result["errorId"] != 0:
-            print(result)
             break
         if "solution" in result:
             # perplexity_cookies.append(f"cf_clearance={result['solution']['cf_clearance']};")
@@ -209,13 +208,26 @@ async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], di
 
 
 async def auth_emailnator(browser: webdriver.Chrome) -> tuple[dict[str, str], dict[str, str]]:
+    seleniumwire_options = {
+        'proxy': {
+            'http': f'http://theuser:AupJ7fEzPjVXkRj5@45.12.73.28:3128',
+        },
+    }
+    options = webdriver.ChromeOptions()
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--start-maximized")
+    # options.add_argument("user-data-dir=/Users/ichek/Documents/GitHub/GPT_docs/scripts/selenium")
+    driver = webdriver.Chrome(seleniumwire_options=seleniumwire_options, options=options)
     loop = asyncio.get_event_loop()
     # browser.get("https://www.emailnator.com/")
-    await loop.run_in_executor(None, browser.get, "https://www.emailnator.com/")
+    await loop.run_in_executor(None, driver.get, "https://www.emailnator.com/")
     try:
-        browser.find_element(By.NAME, "goBtn").click()
+        driver.find_element(By.NAME, "goBtn").click()
     except Exception:
         pass
     await asyncio.sleep(3)
-    headers, cookies = get_emailnator_auth_data(browser)
+    headers, cookies = get_emailnator_auth_data(driver)
+    driver.quit()
     return headers, cookies
