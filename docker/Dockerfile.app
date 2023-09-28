@@ -27,6 +27,11 @@ WORKDIR /project
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    chromium \
+    chromium-driver
+
 COPY --from=builder /project/.venv /project/.venv
 COPY --from=builder /project/entrypoint.sh /project/entrypoint.sh
 COPY --from=builder /project/app/ /project/app/
