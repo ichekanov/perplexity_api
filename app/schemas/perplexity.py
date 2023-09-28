@@ -9,7 +9,7 @@ class PerplexityRequest(BaseModel):
 
 
 class PerplexityResponse(BaseModel):
-    message: str = Field(default="This is the answer", description="Response from perplexity.")
+    message: dict = Field(default={"response": "This is the answer"}, description="Response from perplexity.")
 
 
 class PerplexityUnavailableResponse(BaseModel):
