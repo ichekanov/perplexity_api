@@ -4,7 +4,6 @@ version = "1.0.0"
 description = "Unofficial API for Perplexity AI service"
 authors = ["Ivan Chekanov <is.2003.01@gmail.com>"]
 license = "MIT"
-readme = "README.md"
 packages = [{include = "app"}]
 
 # DEPENDENCIES
