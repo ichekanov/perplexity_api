@@ -84,7 +84,7 @@ class Perplexity:
         self.copilots_left: int = 0
         self._perplexity_auth: Perplexity.AuthData | None = None
         self._emailnator_auth: Perplexity.AuthData | None = None
-        self.last_update: datetime = datetime.now()
+        self.last_update: datetime = datetime.fromtimestamp(0)
 
     async def _renew_cookies(self):
         self.status = PerplexityStatus.UPDATING

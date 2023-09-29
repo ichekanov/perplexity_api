@@ -21,10 +21,10 @@ perplexity_client = Perplexity()
     },
 )
 async def ask_perplexity(request: PerplexityRequest):
-    if perplexity_client.status != PerplexityStatus.READY:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=PerplexityUnavailableResponse(status=perplexity_client.status, message=perplexity_client.status),
-        )
+    # if perplexity_client.status != PerplexityStatus.READY:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+    #         detail=PerplexityUnavailableResponse(status=perplexity_client.status, message=perplexity_client.status).model_dump_json(),
+    #     )
     response = await perplexity_client.ask(query=request.message, mode=request.mode)
     return PerplexityResponse(message=response)
