@@ -102,9 +102,9 @@ class Perplexity:
         self.status = PerplexityStatus.UPDATING
         self.last_update = datetime.now()
         self._client = await self._create_client()
-        loop = asyncio.get_running_loop()
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            self._client = await loop.run_in_executor(pool, await self._create_client)
+        # loop = asyncio.get_running_loop()
+        # with concurrent.futures.ThreadPoolExecutor() as pool:
+            # self._client = await loop.run_in_executor(pool, await self._create_client)
         self.status = PerplexityStatus.READY
 
     async def ask(self, query: str, mode: str) -> str:
