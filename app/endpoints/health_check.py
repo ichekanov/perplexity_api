@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import timedelta
 
 from fastapi import APIRouter
 from starlette import status
 
+from app.config import get_settings
 from app.schemas import PerplexityStatusResponse, PingResponse
 from app.utils import Perplexity
 
@@ -29,7 +30,8 @@ async def perplexity_check():
     return PerplexityStatusResponse(
         status=perplexity_client.status,
         message=perplexity_client.status,
-        copilots_left=perplexity_client._client.copilot,
+        copilots_left=perplexity_client.copilots_left,
         last_authenticated=perplexity_client.last_update,
-        next_authentication=datetime.fromtimestamp(0),
+        next_authentication=perplexity_client.last_update
+        + timedelta(seconds=get_settings().PERPLEXITY_UPDATE_INTERVAL),
     )

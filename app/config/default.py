@@ -21,6 +21,7 @@ class DefaultSettings(BaseSettings):
 
     PERPLEXITY_CLOUDFLARE_KEY: str = environ.get("PERPLEXITY_CLOUDFLARE_KEY", "")
     PERPLEXITY_URL: str = environ.get("PERPLEXITY_URL", "https://www.perplexity.ai/")
+    PERPLEXITY_UPDATE_INTERVAL: int = int(environ.get("PERPLEXITY_UPDATE_INTERVAL", 60 * 60 * 1))
 
     PROXY_HOST: str = environ.get("PROXY_HOST", "")
     PROXY_LOGIN: str = environ.get("PROXY_LOGIN", "")

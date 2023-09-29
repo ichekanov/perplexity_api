@@ -3,7 +3,7 @@ name: perplexity-api
 
 services:
   app:
-    restart: always
+    restart: unless-stopped
     build:
       context: .
       dockerfile: ./docker/Dockerfile.app
@@ -13,7 +13,8 @@ services:
       - 8000:8000
     entrypoint: ["/bin/bash", "./entrypoint.sh"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://0.0.0.0:8000/api/status/ping"]
+      test: curl --fail http://localhost:8000/api/status/ping || exit 1
+      start_period: 5s
       interval: 30s
       timeout: 10s
       retries: 5
