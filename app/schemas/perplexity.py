@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, Field, field_serializer
 
 from .custom import PerplexityMode, PerplexityStatus
 

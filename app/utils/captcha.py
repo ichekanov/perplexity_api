@@ -145,25 +145,24 @@ def get_emailnator_auth_data(driver: webdriver.Chrome) -> tuple[dict[str, str], 
 
 async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], dict[str, str]]:
     data = {
-        "clientKey":"39a45af0d72b51faeb0b2cb424c41f7b",
-        "task":
-        {
-            "type":"TurnstileTask",
+        "clientKey": "39a45af0d72b51faeb0b2cb424c41f7b",
+        "task": {
+            "type": "TurnstileTask",
             "cloudflareTaskType": "cf_clearance",
-            "websiteURL":"https://www.perplexity.ai/",
-            "websiteKey":"0x4AAAAAAADnPIDROrmt1Wwj",  # method could be found in selenium.ipynb
-            "proxyType":"http",
-            "proxyAddress":"45.12.73.28",  # https://anti-captcha.com/ru/apidoc/articles/how-to-install-squid
-            "proxyPort":3128,
-            "proxyLogin":"theuser",
-            "proxyPassword":"AupJ7fEzPjVXkRj5",
+            "websiteURL": "https://www.perplexity.ai/",
+            "websiteKey": "0x4AAAAAAADnPIDROrmt1Wwj",  # method could be found in selenium.ipynb
+            "proxyType": "http",
+            "proxyAddress": "45.12.73.28",  # https://anti-captcha.com/ru/apidoc/articles/how-to-install-squid
+            "proxyPort": 3128,
+            "proxyLogin": "theuser",
+            "proxyPassword": "AupJ7fEzPjVXkRj5",
             "htmlPageBase64": None,
             "userAgent": None,
-        }
+        },
     }
     seleniumwire_options = {
-        'proxy': {
-            'http': f'http://theuser:AupJ7fEzPjVXkRj5@45.12.73.28:3128',
+        "proxy": {
+            "http": f"http://theuser:AupJ7fEzPjVXkRj5@45.12.73.28:3128",
         },
     }
     options = webdriver.ChromeOptions()
@@ -182,7 +181,10 @@ async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], di
     resp = httpx.post("https://api.capmonster.cloud/createTask", json=data).json()
     result = {}
     while "solution" not in result:
-        result = httpx.post("https://api.capmonster.cloud/getTaskResult", json={"clientKey": "39a45af0d72b51faeb0b2cb424c41f7b", "taskId": resp["taskId"]}).json()
+        result = httpx.post(
+            "https://api.capmonster.cloud/getTaskResult",
+            json={"clientKey": "39a45af0d72b51faeb0b2cb424c41f7b", "taskId": resp["taskId"]},
+        ).json()
         if result["errorId"] != 0:
             break
         if "solution" in result:
@@ -190,7 +192,7 @@ async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], di
             print(result)
             break
         await asyncio.sleep(2)
-    driver.add_cookie({"name": "cf_clearance", "value": result['solution']['cf_clearance']})
+    driver.add_cookie({"name": "cf_clearance", "value": result["solution"]["cf_clearance"]})
     driver.get("https://www.perplexity.ai")
     # await loop.run_in_executor(None, browser.get, settings.PERPLEXITY_URL)
     await asyncio.sleep(1)
