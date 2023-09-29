@@ -2,6 +2,7 @@ from logging import getLogger
 
 from fastapi import FastAPI
 from uvicorn import run
+from uvicorn.config import LOGGING_CONFIG
 
 from app.config import DefaultSettings
 from app.config.utils import get_settings
@@ -52,6 +53,7 @@ async def startup_event() -> None:
 
 if __name__ == "__main__":  # pragma: no cover
     settings_for_application = get_settings()
+    LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s [%(name)s] %(levelprefix)s %(message)s"
     run(
         "app.__main__:app",
         host=get_hostname(settings_for_application.APP_HOST),
