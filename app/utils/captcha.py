@@ -2,6 +2,9 @@ import asyncio
 import base64
 
 import httpx
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver import ActionChains
+from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 from selenium.webdriver.common.by import By
 from seleniumwire import webdriver
 
@@ -32,7 +35,7 @@ async def request_cloudfare_challenge(web_session: httpx.AsyncClient, user_agent
                 "websiteURL": settings.PERPLEXITY_URL,
                 "websiteKey": settings.PERPLEXITY_CLOUDFLARE_KEY,  # method could be found in selenium.ipynb
                 "proxyType": "http",
-                "proxyAddress": settings.APP_HOST,  # https://anti-captcha.com/ru/apidoc/articles/how-to-install-squid
+                "proxyAddress": settings.PROXY_HOST,  # https://anti-captcha.com/ru/apidoc/articles/how-to-install-squid
                 "proxyPort": settings.PROXY_PORT,
                 "proxyLogin": settings.PROXY_LOGIN,
                 "proxyPassword": settings.PROXY_PASSWORD,
@@ -144,77 +147,34 @@ def get_emailnator_auth_data(driver: webdriver.Chrome) -> tuple[dict[str, str], 
 
 
 async def auth_perplexity(browser: webdriver.Chrome) -> tuple[dict[str, str], dict[str, str]]:
-    data = {
-        "clientKey": "39a45af0d72b51faeb0b2cb424c41f7b",
-        "task": {
-            "type": "TurnstileTask",
-            "cloudflareTaskType": "cf_clearance",
-            "websiteURL": "https://www.perplexity.ai/",
-            "websiteKey": "0x4AAAAAAADnPIDROrmt1Wwj",  # method could be found in selenium.ipynb
-            "proxyType": "http",
-            "proxyAddress": "45.12.73.28",  # https://anti-captcha.com/ru/apidoc/articles/how-to-install-squid
-            "proxyPort": 3128,
-            "proxyLogin": "theuser",
-            "proxyPassword": "AupJ7fEzPjVXkRj5",
-            "htmlPageBase64": None,
-            "userAgent": None,
-        },
-    }
-    seleniumwire_options = {
-        "proxy": {
-            "http": f"http://theuser:AupJ7fEzPjVXkRj5@45.12.73.28:3128",
-        },
-    }
-    options = webdriver.ChromeOptions()
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--start-maximized")
-    # options.add_argument("user-data-dir=/Users/ichek/Documents/GitHub/GPT_docs/scripts/selenium")
-    driver = webdriver.Chrome(seleniumwire_options=seleniumwire_options, options=options)
-    driver.get("https://www.perplexity.ai")
-    page_source = driver.page_source
-    page_source = base64.b64encode(page_source.encode("utf-8")).decode("utf-8")
-    user_agent = driver.execute_script("return navigator.userAgent;")
-    data["task"]["htmlPageBase64"] = page_source
-    data["task"]["userAgent"] = user_agent
-    resp = httpx.post("https://api.capmonster.cloud/createTask", json=data).json()
-    result = {}
-    while "solution" not in result:
-        result = httpx.post(
-            "https://api.capmonster.cloud/getTaskResult",
-            json={"clientKey": "39a45af0d72b51faeb0b2cb424c41f7b", "taskId": resp["taskId"]},
-        ).json()
-        if result["errorId"] != 0:
-            break
-        if "solution" in result:
-            # perplexity_cookies.append(f"cf_clearance={result['solution']['cf_clearance']};")
-            print(result)
-            break
-        await asyncio.sleep(2)
-    driver.add_cookie({"name": "cf_clearance", "value": result["solution"]["cf_clearance"]})
-    driver.get("https://www.perplexity.ai")
-    # await loop.run_in_executor(None, browser.get, settings.PERPLEXITY_URL)
+    browser.get("https://www.perplexity.ai")
+    page_source_b64 = base64.b64encode(browser.page_source.encode("utf-8")).decode("utf-8")
+    user_agent = browser.execute_script("return navigator.userAgent;")
+    async with httpx.AsyncClient() as web_session:
+        task_id = await request_cloudfare_challenge(web_session, user_agent, page_source_b64)
+        cf_clearance = await get_cloudfare_challenge_result(web_session, task_id)
+    browser.add_cookie({"name": "cf_clearance", "value": cf_clearance})
+    browser.get("https://www.perplexity.ai")
     await asyncio.sleep(1)
-    driver.find_element(By.XPATH, "//div[contains(text(), 'Sign Up')]").click()
+    browser.find_element(By.XPATH, "//div[contains(text(), 'Sign Up')]").click()
     await asyncio.sleep(1)
-    driver.find_element(By.XPATH, "//input[@type='email']").send_keys("aa@aa.aa")
+    browser.find_element(By.XPATH, "//input[@type='email']").send_keys("aa@aa.aa")
     await asyncio.sleep(1)
-    driver.find_element(By.XPATH, "//div[contains(text(), 'Continue with Email')]").click()
+    browser.find_element(By.XPATH, "//div[contains(text(), 'Continue with Email')]").click()
     await asyncio.sleep(3)
-    cookies = get_perplexity_cookies(driver)
-    headers = get_perplexity_headers(driver)
-    driver.quit()
+    cookies = get_perplexity_cookies(browser)
+    headers = get_perplexity_headers(browser)
     return headers, cookies
 
 
 async def auth_emailnator(browser: webdriver.Chrome) -> tuple[dict[str, str], dict[str, str]]:
-    loop = asyncio.get_event_loop()
-    # browser.get("https://www.emailnator.com/")
-    await loop.run_in_executor(None, browser.get, "https://www.emailnator.com/")
+    browser.get("https://www.emailnator.com/")
     try:
-        browser.find_element(By.NAME, "goBtn").click()
-    except Exception:
+        btn = browser.find_element(By.NAME, "goBtn")
+        scroll_origin = ScrollOrigin.from_element(btn)
+        ActionChains(browser).scroll_from_origin(scroll_origin, 0, 200).perform()
+        btn.click()
+    except NoSuchElementException:
         pass
     await asyncio.sleep(3)
     headers, cookies = get_emailnator_auth_data(browser)

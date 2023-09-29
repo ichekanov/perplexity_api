@@ -1,3 +1,5 @@
+import asyncio
+import concurrent.futures
 from datetime import datetime
 from logging import getLogger
 
@@ -63,29 +65,26 @@ class Browser:
             self.display.stop()
 
 
-class Perplexity(AsyncMixin):
-    _instance = None
-
+class Perplexity:
     def __new__(cls, *args, **kwargs):
-        if not cls._instance:
+        if not hasattr(cls, "_instance"):
             cls._instance = super(Perplexity, cls).__new__(cls, *args, **kwargs)
         return cls._instance
 
-    async def __ainit__(self):
+    def __init__(self):
         self._logger = getLogger("uvicorn.debug")
         self.status: PerplexityStatus = PerplexityStatus.INIT
-        self.chrome_options = Options()
-        self.chrome_options.add_argument("--no-sandbox")
-        self.chrome_options.add_argument("--disable-gpu")
-        self.chrome_options.add_argument("--disable-dev-shm-usage")
-        self.chrome_options.add_argument("--start-maximized")
-        self.client: PerplexityClient = await self._create_client()
-        self.status = PerplexityStatus.READY
+        self._chrome_options = Options()
+        self._chrome_options.add_argument("--no-sandbox")
+        self._chrome_options.add_argument("--disable-gpu")
+        self._chrome_options.add_argument("--disable-dev-shm-usage")
+        self._chrome_options.add_argument("--start-maximized")
+        self._client: PerplexityClient | None = None
         self.last_update: datetime = datetime.now()
 
     async def _create_client(self) -> PerplexityClient:
         self._logger.info("[PERPLEXITY] Fetching credentials for new client...")
-        with Browser(self.chrome_options, force_timeout=5) as browser:
+        with Browser(self._chrome_options, force_timeout=5) as browser:
             perplexity_headers, perplexity_cookies = await auth_perplexity(browser)
             self._logger.info("[PERPLEXITY] Perplexity headers: %s", perplexity_headers)
             self._logger.info("[PERPLEXITY] Perplexity cookies: %s", perplexity_cookies)
@@ -102,11 +101,16 @@ class Perplexity(AsyncMixin):
     async def update_client(self) -> None:
         self.status = PerplexityStatus.UPDATING
         self.last_update = datetime.now()
-        self.client = await self._create_client()
+        self._client = await self._create_client()
+        loop = asyncio.get_running_loop()
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            self._client = await loop.run_in_executor(pool, await self._create_client)
         self.status = PerplexityStatus.READY
 
     async def ask(self, query: str, mode: str) -> str:
+        if not self._client:
+            raise RuntimeError("Client is not initialized")
         self.status = PerplexityStatus.BUSY
-        response = await self.client.search(query=query, mode=mode)
+        response = await self._client.search(query=query, mode=mode)
         self.status = PerplexityStatus.READY
         return response

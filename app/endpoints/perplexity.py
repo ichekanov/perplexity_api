@@ -6,6 +6,7 @@ from app.utils import Perplexity
 
 
 api_router = APIRouter(tags=["Perplexity"], prefix="/perplexity")
+perplexity_client = Perplexity()
 
 
 @api_router.post(
@@ -14,17 +15,16 @@ api_router = APIRouter(tags=["Perplexity"], prefix="/perplexity")
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_503_SERVICE_UNAVAILABLE: {
-            "description": "Video cannot be processed at the moment, try again later",
+            "description": "Request cannot be processed at the moment, try again later",
             "model": PerplexityUnavailableResponse,
         },
     },
 )
 async def ask_perplexity(request: PerplexityRequest):
-    client = await Perplexity()
-    if client.status != PerplexityStatus.READY:
+    if perplexity_client.status != PerplexityStatus.READY:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=PerplexityUnavailableResponse(status=client.status, message=client.status),
+            detail=PerplexityUnavailableResponse(status=perplexity_client.status, message=perplexity_client.status),
         )
-    response = await client.ask(query=request.message, mode=request.mode)
+    response = await perplexity_client.ask(query=request.message, mode=request.mode)
     return PerplexityResponse(message=response)

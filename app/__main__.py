@@ -46,7 +46,8 @@ async def startup_event() -> None:
     """
     logger = getLogger("uvicorn.info")
     logger.info("Starting Perplexity module...")
-    await Perplexity()
+    client = Perplexity()
+    await client.update_client()
 
 
 if __name__ == "__main__":  # pragma: no cover
@@ -55,7 +56,7 @@ if __name__ == "__main__":  # pragma: no cover
         "app.__main__:app",
         host=get_hostname(settings_for_application.APP_HOST),
         port=settings_for_application.APP_PORT,
-        reload=True,
+        # reload=True,
         reload_dirs=["app", "tests"],
         log_level="debug",
     )
