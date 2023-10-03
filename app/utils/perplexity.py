@@ -118,10 +118,10 @@ class Perplexity:
 
     async def ask(self, query: str, mode: PerplexityMode) -> str:
         self.status = PerplexityStatus.BUSY
-        if mode == PerplexityMode.COPILOT:
-            self.copilots_left -= 1
         client = await self._create_client()
         response = await client.search(query=query, mode=mode)
+        if mode == PerplexityMode.COPILOT:
+            self.copilots_left -= 1
         await client.session.close()
         client.ws.close()
         del client
