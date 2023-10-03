@@ -88,7 +88,6 @@ class Perplexity:
 
     async def _renew_cookies(self):
         self.status = PerplexityStatus.UPDATING
-        self.last_update = datetime.now()
         with Browser(self._chrome_options, force_timeout=5) as browser:
             self._perplexity_auth = Perplexity.AuthData(*await auth_perplexity(browser))
             self._logger.info("[PERPLEXITY] Perplexity headers: %s", self._perplexity_auth.headers)
@@ -96,6 +95,7 @@ class Perplexity:
             self._emailnator_auth = Perplexity.AuthData(*await auth_emailnator(browser))
             self._logger.info("[PERPLEXITY] Emailnator headers: %s", self._emailnator_auth.headers)
             self._logger.info("[PERPLEXITY] Emailnator cookies: %s", self._emailnator_auth.cookies)
+        self.last_update = datetime.now()
         self.copilots_left = 5
         self.status = PerplexityStatus.READY
 
