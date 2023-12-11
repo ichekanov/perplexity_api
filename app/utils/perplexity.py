@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 
 from pyvirtualdisplay import Display
@@ -6,10 +6,9 @@ from selenium.webdriver.chrome.options import Options
 from seleniumwire import webdriver
 
 from .captcha import auth_emailnator, auth_perplexity
-from .common import AsyncMixin
 from .perplexity_client import Client as PerplexityClient
 from app.config import get_settings
-from app.schemas import PerplexityStatus
+from app.schemas import PerplexityMode, PerplexityStatus
 
 
 class Browser:
@@ -63,50 +62,68 @@ class Browser:
             self.display.stop()
 
 
-class Perplexity(AsyncMixin):
-    _instance = None
+class Perplexity:
+    class AuthData:
+        def __init__(self, headers: dict[str, str], cookies: dict[str, str]):
+            self.headers = headers
+            self.cookies = cookies
 
     def __new__(cls, *args, **kwargs):
-        if not cls._instance:
+        if not hasattr(cls, "_instance"):
             cls._instance = super(Perplexity, cls).__new__(cls, *args, **kwargs)
         return cls._instance
 
-    async def __ainit__(self):
+    def __init__(self):
         self._logger = getLogger("uvicorn.debug")
         self.status: PerplexityStatus = PerplexityStatus.INIT
-        self.chrome_options = Options()
-        self.chrome_options.add_argument("--no-sandbox")
-        self.chrome_options.add_argument("--disable-gpu")
-        self.chrome_options.add_argument("--disable-dev-shm-usage")
-        self.chrome_options.add_argument("--start-maximized")
-        self.client: PerplexityClient = await self._create_client()
+        self._chrome_options = Options()
+        self._chrome_options.add_argument("--no-sandbox")
+        self._chrome_options.add_argument("--disable-gpu")
+        self._chrome_options.add_argument("--disable-dev-shm-usage")
+        self._chrome_options.add_argument("--start-maximized")
+        self.copilots_left: int = 0
+        self._perplexity_auth: Perplexity.AuthData | None = None
+        self._emailnator_auth: Perplexity.AuthData | None = None
+        self.last_update: datetime = datetime.fromtimestamp(0)
+
+    async def _renew_cookies(self):
+        self.status = PerplexityStatus.UPDATING
+        with Browser(self._chrome_options, force_timeout=5) as browser:
+            self._perplexity_auth = Perplexity.AuthData(*await auth_perplexity(browser))
+            self._logger.info("[PERPLEXITY] Perplexity headers: %s", self._perplexity_auth.headers)
+            self._logger.info("[PERPLEXITY] Perplexity cookies: %s", self._perplexity_auth.cookies)
+            self._emailnator_auth = Perplexity.AuthData(*await auth_emailnator(browser))
+            self._logger.info("[PERPLEXITY] Emailnator headers: %s", self._emailnator_auth.headers)
+            self._logger.info("[PERPLEXITY] Emailnator cookies: %s", self._emailnator_auth.cookies)
+        self.last_update = datetime.now()
+        self.copilots_left = 5
         self.status = PerplexityStatus.READY
-        self.last_update: datetime = datetime.now()
 
     async def _create_client(self) -> PerplexityClient:
-        self._logger.info("[PERPLEXITY] Fetching credentials for new client...")
-        with Browser(self.chrome_options, force_timeout=5) as browser:
-            perplexity_headers, perplexity_cookies = await auth_perplexity(browser)
-            self._logger.info("[PERPLEXITY] Perplexity headers: %s", perplexity_headers)
-            self._logger.info("[PERPLEXITY] Perplexity cookies: %s", perplexity_cookies)
-            emailnator_headers, emailnator_cookies = await auth_emailnator(browser)
-            self._logger.info("[PERPLEXITY] Emailnator headers: %s", emailnator_headers)
-            self._logger.info("[PERPLEXITY] Emailnator cookies: %s", emailnator_cookies)
-        self._logger.info("[PERPLEXITY] Credentials fetched. Authenticating...")
-        client = await PerplexityClient(perplexity_headers, perplexity_cookies)
+        if (
+            self.copilots_left == 0
+            or self._perplexity_auth is None
+            or self.last_update + timedelta(seconds=get_settings().PERPLEXITY_UPDATE_INTERVAL) < datetime.now()
+        ):
+            self._logger.info("[PERPLEXITY] Fetching credentials for new client...")
+            await self._renew_cookies()
+            self._logger.info("[PERPLEXITY] Credentials fetched. Authenticating...")
+        else:
+            self._logger.info("[PERPLEXITY] Using existing credentials for new client. Authenticating...")
+        client = await PerplexityClient(self._perplexity_auth.headers, self._perplexity_auth.cookies)
         self._logger.info("[PERPLEXITY] Authenticated. Creating account...")
-        await client.create_account(emailnator_headers, emailnator_cookies)
+        await client.create_account(self._emailnator_auth.headers, self._emailnator_auth.cookies)
         self._logger.info("[PERPLEXITY] Account created.")
         return client
 
-    async def update_client(self) -> None:
-        self.status = PerplexityStatus.UPDATING
-        self.last_update = datetime.now()
-        self.client = await self._create_client()
-        self.status = PerplexityStatus.READY
-
-    async def ask(self, query: str, mode: str) -> str:
+    async def ask(self, query: str, mode: PerplexityMode) -> str:
         self.status = PerplexityStatus.BUSY
-        response = await self.client.search(query=query, mode=mode)
+        client = await self._create_client()
+        response = await client.search(query=query, mode=mode)
+        if mode == PerplexityMode.COPILOT:
+            self.copilots_left -= 1
+        await client.session.close()
+        client.ws.close()
+        del client
         self.status = PerplexityStatus.READY
         return response

@@ -2,6 +2,7 @@ from logging import getLogger
 
 from fastapi import FastAPI
 from uvicorn import run
+from uvicorn.config import LOGGING_CONFIG
 
 from app.config import DefaultSettings
 from app.config.utils import get_settings
@@ -39,23 +40,14 @@ def get_app() -> FastAPI:
 app = get_app()
 
 
-@app.on_event("startup")
-async def startup_event() -> None:
-    """
-    Runs on application startup.
-    """
-    logger = getLogger("uvicorn.info")
-    logger.info("Starting Perplexity module...")
-    await Perplexity()
-
-
 if __name__ == "__main__":  # pragma: no cover
     settings_for_application = get_settings()
+    LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s %(levelprefix)s %(message)s"
     run(
         "app.__main__:app",
         host=get_hostname(settings_for_application.APP_HOST),
         port=settings_for_application.APP_PORT,
-        reload=True,
+        # reload=True,
         reload_dirs=["app", "tests"],
         log_level="debug",
     )
